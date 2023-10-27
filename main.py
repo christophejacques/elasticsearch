@@ -6,7 +6,7 @@ import locale
 locale.setlocale(locale.LC_ALL, '')
 locale._override_localeconv = {'mon_thousands_sep': ' '}
 
-es = Elasticsearch([{"scheme": "http", "host": "localhost", "port": 9200}])
+es = Elasticsearch([{"scheme": "http", "host": "localhost", "port": 9200}], timeout=1.0)
 if not es.ping():
     print("Elastic connection failed.")
     exit()
@@ -15,12 +15,14 @@ print(f"ElasticSearch v{es.info().get('version').get('number')}")
 
 
 def methods():
-    for attrib in dir(es):
+    for attrib in filter(lambda x: not x.startswith("_"), dir(es)):
         print(f"{attrib:40}", end="")
     exit()
 
 
+help(es.search)
 # methods()
+exit()
 
 
 def liste_index():
@@ -36,6 +38,9 @@ def liste_index():
 
     print()
     exit()
+
+
+liste_index()
 
 
 def aggregations():
