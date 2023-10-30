@@ -1,3 +1,4 @@
+from typing import Union
 from elasticsearch import Elasticsearch
 import locale
 
@@ -7,13 +8,19 @@ def eprint(*args, **kwargs):
 
 
 def check():
-    taille_index: int = 50
+    es = Elasticsearch([{"scheme": "http", "host": "localhost", "port": 9200}], request_timeout=2.0)
+
+    taille_index: int = 20
+
+    for line in es.cat.indices(index=".*").splitlines():
+        index_name = line.split()[2]
+        if taille_index < len(index_name):
+            taille_index = len(index_name)
+
     taille_int: int = 8
     taille_uuid: int = 24
     taille_health: int = 8
     taille_status: int = 7
-
-    es = Elasticsearch([{"scheme": "http", "host": "localhost", "port": 9200}], request_timeout=5.0)
 
     def print_ligne_horizontale():
         eprint(f'+{"-"*(2+taille_index)}')
@@ -42,7 +49,7 @@ def check():
         print(" |")
 
     print_ligne_horizontale()
-    eprint(f"| {'index':^{1+taille_index}}")
+    eprint(f"| {'index name':^{1+taille_index}}")
     eprint(f"| {'shards':^{1+3*(1+taille_int)}}")
     eprint(f"| {'indices':^{1+(3+taille_uuid+taille_health+taille_status)}}")
     print(f"| {'total docs':^{2*(1+taille_int)}}|")
@@ -57,9 +64,11 @@ def check():
     eprint(f"| {'count':^{taille_int}}")
     print(f"| {'deleted':^{taille_int}}|")
 
-    print_ligne_horizontale()
-    for index_name in es.indices.get(index=".*").keys():
-        print_data_table(index_name)
+    if False:
+        print_ligne_horizontale()
+        for line in es.cat.indices(index=".*").splitlines():
+            index_name = line.split()[2]
+            print_data_table(index_name)
 
     print_ligne_horizontale()
     for index_name in es.indices.get(index="*").keys():
@@ -82,7 +91,7 @@ def correction():
     exit()
 
 
-correction()
+# correction()
 
 locale.setlocale(locale.LC_ALL, '')
 locale._override_localeconv = {'mon_thousands_sep': ' '}
@@ -106,6 +115,9 @@ class Elastic:
 
     def close(self):
         self.es.close()
+
+    def has_index(self, index_name: str) -> bool:
+        return bool(self.es.indices.exists(index=index_name))
 
     def use_index(self, index_name: str):
         if not self.es.indices.exists(index=index_name):
@@ -135,13 +147,13 @@ class Elastic:
         print()
         exit()
 
-    def search(self, index_name: str, query, size: int = -1):
+    def search(self, index_name: str, query: Union[str, dict], size: int = -1) -> dict:
         if size == -1:
             size = self.count(index_name)
         fprint(f"Searching in {index_name}, {query} ... ", end="")
-        if type(query) == str:
+        if isinstance(query, str):
             properties = self.es.search(index=index_name, q=query, size=size)
-        elif type(query) == dict:
+        elif isinstance(query, dict):
             properties = self.es.search(index=index_name, query=query, size=size)
         else:
             raise Exception("Le parametre Query doit etre de type str ou dict.")
@@ -259,14 +271,10 @@ if __name__ == "__main__":
     es.use_index(index_name)
     es.delete_index()
 
-    query = {
-        "match": {
-            "date": "2023-10-05"
-        }
-    }
-    # query = "code_partenaire = 'ARA'"
+    # query = {"match": {"date": "2023-10-05"}}
+    query = "code_partenaire = 'ARA' or code_partenaire = 'DRP'"
     # properties = es.search("suivi-activite", query="_id:*", size=5)
-    properties = es.search("suivi-activite", query=query, size=5)
+    properties = es.search("suivi-activite", query=query, size=15)
 
     num: int = 0
     for docs in properties.get("hits"):
