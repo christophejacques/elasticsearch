@@ -1,4 +1,4 @@
-from typing import Union
+from typing import Union, Any
 from elasticsearch import Elasticsearch
 import locale
 
@@ -79,7 +79,7 @@ def check():
     exit()
 
 
-check()
+# check()
 
 
 def correction():
@@ -147,7 +147,7 @@ class Elastic:
         print()
         exit()
 
-    def search(self, index_name: str, query: Union[str, dict], size: int = -1) -> dict:
+    def search(self, index_name: str, query: Union[str, dict], size: int = -1) -> dict[str, Any]:
         if size == -1:
             size = self.count(index_name)
         fprint(f"Searching in {index_name}, {query} ... ", end="")
@@ -253,14 +253,6 @@ class Elastic:
 
 if __name__ == "__main__":
     es = Elastic("localhost", 9200)
-    if False:
-        # from pprint import pprint
-        # print(dir(es.es))
-        # print(dir(es.es.indices))
-        # help(es.es.indices.delete)
-        # pprint(es.es.indices.stats(index="creation")["indices"]["creation"]["total"])
-
-        exit()
 
     es.use_index("suivi-activite")
     taille: int = es.count()
@@ -273,11 +265,12 @@ if __name__ == "__main__":
 
     # query = {"match": {"date": "2023-10-05"}}
     query = "code_partenaire = 'ARA' or code_partenaire = 'DRP'"
+    query = "code_partenaire in ('ARA', 'DRP', 'NAQ')"
     # properties = es.search("suivi-activite", query="_id:*", size=5)
     properties = es.search("suivi-activite", query=query, size=15)
 
     num: int = 0
-    for docs in properties.get("hits"):
+    for docs in properties["hits"]:
         document: dict = {}
         num += 1
         print(f"{num:3}", docs.get("_id"), ": ", end="")
