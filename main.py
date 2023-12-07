@@ -20,9 +20,7 @@ def methods():
     exit()
 
 
-help(es.search)
 # methods()
-exit()
 
 
 def liste_index():
@@ -40,7 +38,7 @@ def liste_index():
     exit()
 
 
-liste_index()
+# liste_index()
 
 
 def aggregations():
